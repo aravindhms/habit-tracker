@@ -2,7 +2,7 @@
 
 A modern, responsive habit tracker application built with React, Node.js, and SQLite.
 
-![Habit Tracker Screenshot](https://raw.githubusercontent.com/aravindhms/habit-tracker/main/screenshot.png)
+![Habit Tracker Screenshot](./screenshot.png)
 
 ## Features
 
