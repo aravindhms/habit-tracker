@@ -239,8 +239,8 @@ body {
 
 .grid-header {
   display: grid;
-  grid-template-columns: 220px repeat(31, 1fr);
-  gap: 3px;
+  grid-template-columns: 220px repeat(31, 40px);
+  gap: 4px;
   margin-bottom: 16px;
   border-bottom: 1px solid var(--glass-border);
   padding-bottom: 16px;
@@ -255,11 +255,127 @@ body {
   letter-spacing: 0.05em;
 }
 
+/* Admin Styles */
+.admin-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.admin-header h2 {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.admin-content {
+  max-height: 70vh;
+  overflow-y: auto;
+  padding-right: 8px;
+}
+
+.habits-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.habit-item-admin {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.habit-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+.habit-goal-badge {
+  font-size: 0.75rem;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 4px 8px;
+  border-radius: 6px;
+  color: var(--text-secondary);
+}
+
+.habit-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.action-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--glass-border);
+  color: var(--text-secondary);
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.action-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-primary);
+}
+
+.action-btn.delete:hover {
+  background: rgba(239, 68, 68, 0.2);
+  color: var(--danger-color);
+  border-color: var(--danger-color);
+}
+
+.edit-mode {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+  align-items: center;
+}
+
+.edit-icon {
+  width: 50px !important;
+}
+
+.edit-name {
+  flex: 1;
+}
+
+.edit-goal {
+  width: 80px !important;
+}
+
+/* Fix Grid Alignment */
+.grid-header,
+.habit-row {
+  /* Ensure exact same columns */
+  /* grid-template-columns is now defined in main rules */
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.grid-header {
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+}
+
 .day-header {
   text-align: center;
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 100%;
+  /* Ensure it fills the grid cell */
 }
 
 .day-num {
@@ -270,8 +386,8 @@ body {
 
 .habit-row {
   display: grid;
-  grid-template-columns: 220px repeat(31, 1fr);
-  gap: 3px;
+  grid-template-columns: 220px repeat(31, 40px);
+  gap: 4px;
   align-items: center;
   margin-bottom: 10px;
   padding: 8px 0;
@@ -344,7 +460,7 @@ body {
 
 .analysis-header {
   display: grid;
-  grid-template-columns: 1fr 50px 50px 70px 80px;
+  grid-template-columns: 1fr 50px 50px 80px;
   gap: 12px;
   font-size: 0.75rem;
   font-weight: 600;
@@ -358,7 +474,7 @@ body {
 
 .analysis-item {
   display: grid;
-  grid-template-columns: 1fr 50px 50px 70px 80px;
+  grid-template-columns: 1fr 50px 50px 80px;
   gap: 12px;
   align-items: center;
   margin-bottom: 16px;
@@ -717,4 +833,186 @@ body {
     padding-right: 12px;
     border-right: 1px solid var(--glass-border);
   }
+}
+
+/* Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(5px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.modal-content {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 24px;
+  padding: 32px;
+  width: 90%;
+  max-width: 400px;
+  position: relative;
+  text-align: center;
+  box-shadow: var(--shadow-lg);
+  animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.modal-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 50%;
+  transition: all 0.2s;
+}
+
+.modal-close:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-primary);
+}
+
+.modal-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 24px;
+}
+
+.modal-icon.warning {
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--danger-color);
+}
+
+.modal-content h3 {
+  margin: 0 0 12px;
+  font-size: 1.5rem;
+  color: var(--text-primary);
+}
+
+.modal-content p {
+  margin: 0 0 32px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.modal-actions button {
+  flex: 1;
+  padding: 12px;
+  border-radius: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-secondary {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--glass-border);
+  color: var(--text-primary);
+}
+
+.btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.btn-danger {
+  background: var(--danger-color);
+  border: none;
+  color: white;
+}
+
+.btn-danger:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Apply animations */
+.app-container {
+  animation: fadeIn 0.5s ease-out;
+}
+
+.habit-row {
+  animation: slideUp 0.4s ease-out backwards;
+}
+
+.habit-row:nth-child(1) {
+  animation-delay: 0.1s;
+}
+
+.habit-row:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.habit-row:nth-child(3) {
+  animation-delay: 0.2s;
+}
+
+.habit-row:nth-child(4) {
+  animation-delay: 0.25s;
+}
+
+.habit-row:nth-child(5) {
+  animation-delay: 0.3s;
+}
+
+.habit-cell {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.habit-cell:active {
+  transform: scale(0.9);
 }
