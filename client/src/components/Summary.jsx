@@ -5,17 +5,21 @@ const Summary = ({ habits, logs, currentMonth }) => {
     const calculateSummaryStats = () => {
         const daysInMonth = new Date(currentMonth.year, currentMonth.month, 0).getDate();
 
-        // Total completions this month
-        const totalCompletions = logs.filter(l => l.status === 1).length;
+        // Filter for daily habits only
+        const dailyHabits = habits.filter(h => !h.frequency || h.frequency === 'daily');
+        const dailyHabitIds = new Set(dailyHabits.map(h => h.id));
+
+        // Total completions this month (only for daily habits)
+        const totalCompletions = logs.filter(l => l.status === 1 && dailyHabitIds.has(l.habit_id)).length;
 
         // Total possible completions
-        const totalPossible = habits.length * daysInMonth;
+        const totalPossible = dailyHabits.length * daysInMonth;
 
         // Overall completion rate
         const completionRate = totalPossible > 0 ? ((totalCompletions / totalPossible) * 100).toFixed(1) : 0;
 
-        // Calculate per-habit completion rates
-        const habitStats = habits.map(habit => {
+        // Calculate per-habit completion rates (only daily)
+        const habitStats = dailyHabits.map(habit => {
             const habitCompletions = logs.filter(l => l.habit_id === habit.id && l.status === 1).length;
             const habitGoal = habit.goal || 30;
             const rate = (habitCompletions / habitGoal) * 100;
@@ -43,11 +47,11 @@ const Summary = ({ habits, logs, currentMonth }) => {
 
         const weeklyLogs = logs.filter(l => {
             const logDate = new Date(l.date);
-            return logDate >= sevenDaysAgo && logDate <= today && l.status === 1;
+            return logDate >= sevenDaysAgo && logDate <= today && l.status === 1 && dailyHabitIds.has(l.habit_id);
         });
 
         const weeklyCompletions = weeklyLogs.length;
-        const weeklyPossible = habits.length * 7;
+        const weeklyPossible = dailyHabits.length * 7;
         const weeklyRate = weeklyPossible > 0 ? ((weeklyCompletions / weeklyPossible) * 100).toFixed(1) : 0;
 
         return {

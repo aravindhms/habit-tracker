@@ -4,7 +4,7 @@ const bodyParser = require('body-parser');
 const db = require('./database');
 
 const app = express();
-const PORT = 5000;
+const PORT = process.env.PORT || 5000;
 app.use(cors());
 app.use(bodyParser.json());
 
@@ -19,14 +19,25 @@ app.get('/api/data', (req, res) => {
     const startDate = `${month}-01`;
     const endDate = `${month}-31`; // Simple approximation
 
-    db.all("SELECT * FROM habits", [], (err, habits) => {
+    console.log(`[API] Fetching data for month: ${month}`);
+    db.all("SELECT * FROM habits ORDER BY order_index ASC", [], (err, habits) => {
         if (err) return res.status(500).json({ error: err.message });
 
+        // Use LIKE to match YYYY-MM% which covers:
+        // YYYY-MM-DD (Daily)
+        // YYYY-MM-Wn (Weekly)
+        // YYYY-MM (Monthly)
+        const query = "SELECT * FROM habit_logs WHERE date LIKE ?";
+        const params = [`${month}%`];
+        console.log(`[API] Query: ${query} with params: ${params}`);
+
         db.all(
-            "SELECT * FROM habit_logs WHERE date BETWEEN ? AND ?",
-            [startDate, endDate],
+            query,
+            params,
             (err, logs) => {
                 if (err) return res.status(500).json({ error: err.message });
+                console.log(`[API] Found ${logs.length} logs for ${month}`);
+                if (logs.length > 0) console.log(`[API] Sample log:`, logs[0]);
                 res.json({ habits, logs });
             }
         );
@@ -37,6 +48,8 @@ app.get('/api/data', (req, res) => {
 app.post('/api/toggle', (req, res) => {
     const { habit_id, date, status } = req.body;
 
+    console.log(`[API] Toggle request:`, { habit_id, date, status });
+
     // Upsert logic
     db.run(`INSERT INTO habit_logs (habit_id, date, status) 
           VALUES (?, ?, ?) 
@@ -44,7 +57,11 @@ app.post('/api/toggle', (req, res) => {
           DO UPDATE SET status=excluded.status`,
         [habit_id, date, status],
         function (err) {
-            if (err) return res.status(500).json({ error: err.message });
+            if (err) {
+                console.error(`[API] Toggle Error:`, err);
+                return res.status(500).json({ error: err.message });
+            }
+            console.log(`[API] Toggle Success. Changes: ${this.changes}`);
             res.json({ message: 'Updated', changes: this.changes });
         }
     );
@@ -52,26 +69,52 @@ app.post('/api/toggle', (req, res) => {
 
 // Create new habit
 app.post('/api/habits', (req, res) => {
-    const { name, icon, goal } = req.body;
-    db.run("INSERT INTO habits (name, icon, goal) VALUES (?, ?, ?)",
-        [name, icon, goal || 30],
-        function (err) {
-            if (err) return res.status(500).json({ error: err.message });
-            res.json({ id: this.lastID, name, icon, goal });
-        }
-    );
+    const { name, icon, goal, frequency } = req.body;
+
+    // Get max order_index
+    db.get("SELECT MAX(order_index) as maxOrder FROM habits", (err, row) => {
+        const nextOrder = (row && row.maxOrder !== null) ? row.maxOrder + 1 : 0;
+
+        db.run("INSERT INTO habits (name, icon, goal, frequency, order_index) VALUES (?, ?, ?, ?, ?)",
+            [name, icon, goal || 30, frequency || 'daily', nextOrder],
+            function (err) {
+                if (err) return res.status(500).json({ error: err.message });
+                res.json({ id: this.lastID, name, icon, goal, frequency: frequency || 'daily', order_index: nextOrder });
+            }
+        );
+    });
 });
 
 // Update habit
 app.put('/api/habits/:id', (req, res) => {
-    const { name, icon, goal } = req.body;
-    db.run("UPDATE habits SET name = ?, icon = ?, goal = ? WHERE id = ?",
-        [name, icon, goal, req.params.id],
+    const { name, icon, goal, frequency } = req.body;
+    db.run("UPDATE habits SET name = ?, icon = ?, goal = ?, frequency = ? WHERE id = ?",
+        [name, icon, goal, frequency, req.params.id],
         function (err) {
             if (err) return res.status(500).json({ error: err.message });
             res.json({ message: 'Updated', changes: this.changes });
         }
     );
+});
+
+// Reorder habits
+app.put('/api/habits/reorder', (req, res) => {
+    const { habits } = req.body; // Array of { id, order_index }
+
+    if (!habits || !Array.isArray(habits)) {
+        return res.status(400).json({ error: 'Invalid data' });
+    }
+
+    db.serialize(() => {
+        const stmt = db.prepare("UPDATE habits SET order_index = ? WHERE id = ?");
+        habits.forEach(h => {
+            stmt.run(h.order_index, h.id);
+        });
+        stmt.finalize((err) => {
+            if (err) return res.status(500).json({ error: err.message });
+            res.json({ message: 'Reordered successfully' });
+        });
+    });
 });
 
 // Delete habit

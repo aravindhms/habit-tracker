@@ -16,8 +16,16 @@ function App() {
   const fetchData = async () => {
     try {
       const monthStr = `${currentMonth.year}-${String(currentMonth.month).padStart(2, '0')}`;
-      const res = await fetch(`http://localhost:5000/api/data?month=${monthStr}`);
+      console.log(`Fetching data for: ${monthStr}`);
+      const res = await fetch(`http://localhost:5000/api/data?month=${monthStr}`, {
+        cache: 'no-store',
+        headers: {
+          'Pragma': 'no-cache',
+          'Cache-Control': 'no-cache'
+        }
+      });
       const data = await res.json();
+      console.log(`Received ${data.logs.length} logs for ${monthStr}`);
       setHabits(data.habits);
       setLogs(data.logs);
     } catch (error) {
@@ -106,9 +114,35 @@ function App() {
     }
   };
 
+  const handleReorder = async (newHabits) => {
+    // Optimistic update
+    setHabits(newHabits);
+
+    try {
+      const reorderPayload = newHabits.map((h, index) => ({
+        id: h.id,
+        order_index: index
+      }));
+
+      await fetch('http://localhost:5000/api/habits/reorder', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ habits: reorderPayload })
+      });
+    } catch (err) {
+      console.error("Failed to reorder", err);
+      fetchData(); // Revert on error
+    }
+  };
+
   // Calculate summary stats
-  const totalHabits = habits.length;
-  const totalCompleted = logs.filter(l => l.status === 1).length;
+  const dailyHabits = habits.filter(h => !h.frequency || h.frequency === 'daily');
+  const totalHabits = dailyHabits.length;
+
+  // Filter logs to only include those for daily habits
+  const dailyHabitIds = new Set(dailyHabits.map(h => h.id));
+  const totalCompleted = logs.filter(l => l.status === 1 && dailyHabitIds.has(l.habit_id)).length;
+
   const daysInMonth = new Date(currentMonth.year, currentMonth.month, 0).getDate();
   const totalPossible = totalHabits * daysInMonth; // Approximation
   const progressPercentage = totalPossible > 0 ? ((totalCompleted / totalPossible) * 100).toFixed(2) : 0;
@@ -121,6 +155,9 @@ function App() {
     <div className="app-container">
       <header className="main-header glass-panel">
         <div className="header-left">
+          <div className="app-branding">
+            <h2>Habit Tracker</h2>
+          </div>
           <div className="month-nav">
             <button className="btn-icon" onClick={handlePrevMonth}><ChevronLeft size={24} /></button>
             <h1>{monthNames[currentMonth.month - 1]} {currentMonth.year}</h1>
@@ -157,9 +194,10 @@ function App() {
               logs={logs}
               currentMonth={currentMonth}
               onToggle={handleToggle}
+              onReorder={handleReorder}
             />
             <div className="bottom-row">
-              <Charts logs={logs} currentMonth={currentMonth} />
+              <Charts logs={logs} currentMonth={currentMonth} habits={habits} />
               <Analysis habits={habits} logs={logs} currentMonth={currentMonth} />
             </div>
           </>

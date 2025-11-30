@@ -227,11 +227,14 @@ body {
   overflow-y: visible;
   padding: 8px;
   padding-bottom: 20px;
-  /* Extra padding to prevent scrollbar overlap */
+  width: 100%;
+  /* Ensure it takes full width */
+  box-sizing: border-box;
+  /* Include padding in width */
 }
 
-/* Hide scrollbar on large screens */
-@media (min-width: 1400px) {
+/* Hide scrollbar on large screens if content fits */
+@media (min-width: 1600px) {
   .habit-grid-container {
     overflow-x: visible;
   }
@@ -269,9 +272,8 @@ body {
 }
 
 .admin-content {
-  max-height: 70vh;
-  overflow-y: auto;
-  padding-right: 8px;
+  /* Removed max-height and overflow to allow natural expansion */
+  padding-right: 0;
 }
 
 .habits-list {
@@ -341,18 +343,28 @@ body {
   gap: 8px;
   width: 100%;
   align-items: center;
+  flex-wrap: wrap;
+  /* Allow wrapping on small screens */
 }
 
 .edit-icon {
-  width: 50px !important;
+  width: 40px !important;
+  flex-shrink: 0;
 }
 
 .edit-name {
   flex: 1;
+  min-width: 120px;
+  /* Ensure minimum width */
+}
+
+.edit-frequency {
+  width: auto;
+  min-width: 80px;
 }
 
 .edit-goal {
-  width: 80px !important;
+  width: 60px !important;
 }
 
 /* Fix Grid Alignment */
@@ -732,10 +744,16 @@ body {
   margin-top: 24px;
 }
 
-.habits-list {
+.habits-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.habits-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 24px;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
 }
 
 .habit-list-item {
@@ -1015,4 +1033,211 @@ body {
 
 .habit-cell:active {
   transform: scale(0.9);
+}
+
+/* Weekly Grid Layout */
+.weekly-grid .grid-header,
+.weekly-grid .habit-row {
+  grid-template-columns: 1fr repeat(5, 60px) !important;
+}
+
+/* Monthly Grid Layout */
+.monthly-grid .grid-header,
+.monthly-grid .habit-row {
+  grid-template-columns: 1fr 100px !important;
+}
+
+/* Form Row Layout */
+.form-row {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.form-row .form-group {
+  flex: 1;
+}
+
+/* Select Styling */
+.form-group select {
+  width: 100%;
+  padding: 12px;
+  border: 2px solid var(--glass-border);
+  border-radius: 12px;
+  font-size: 1rem;
+  box-sizing: border-box;
+  transition: border-color 0.2s;
+  background: rgba(0, 0, 0, 0.2);
+  color: var(--text-primary);
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 16px;
+  cursor: pointer;
+}
+
+.form-group select:focus {
+  outline: none;
+  border-color: var(--accent-color);
+  background-color: rgba(0, 0, 0, 0.3);
+}
+
+/* Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.modal-content {
+  background: #1e293b;
+  border: 1px solid var(--glass-border);
+  border-radius: 24px;
+  padding: 32px;
+  width: 90%;
+  max-width: 400px;
+  position: relative;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.4);
+  animation: scaleIn 0.2s ease-out;
+}
+
+.modal-content.edit-modal {
+  max-width: 500px;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.modal-close {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 50%;
+  transition: all 0.2s;
+}
+
+.modal-close:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-primary);
+}
+
+.modal-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 20px;
+}
+
+.modal-icon.warning {
+  background: rgba(251, 191, 36, 0.2);
+  color: #fbbf24;
+}
+
+.delete-modal h3 {
+  text-align: center;
+  margin: 0 0 12px;
+  font-size: 1.5rem;
+}
+
+.delete-modal p {
+  text-align: center;
+  color: var(--text-secondary);
+  margin: 0 0 32px;
+  line-height: 1.5;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.delete-modal .modal-actions {
+  justify-content: center;
+}
+
+.btn-danger {
+  background: var(--danger-color);
+  color: white;
+  border: none;
+  padding: 10px 24px;
+  border-radius: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-danger:hover {
+  background: #dc2626;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px rgba(239, 68, 68, 0.3);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.form-group select option {
+  background: #1e293b;
+  color: var(--text-primary);
+}
+
+/* Edit Mode Select */
+.edit-frequency {
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--glass-border);
+  color: var(--text-primary);
+  border-radius: 8px;
+  padding: 4px 8px;
+  height: 32px;
+  cursor: pointer;
+}
+
+.edit-frequency option {
+  background: #1e293b;
 }

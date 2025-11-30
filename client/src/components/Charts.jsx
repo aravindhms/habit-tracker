@@ -23,17 +23,21 @@ ChartJS.register(
     Legend
 );
 
-const Charts = ({ logs, currentMonth }) => {
+const Charts = ({ logs, currentMonth, habits }) => {
     const daysInMonth = new Date(currentMonth.year, currentMonth.month, 0).getDate();
     const labels = Array.from({ length: daysInMonth }, (_, i) => i + 1);
+
+    // Filter for daily habits
+    const dailyHabits = habits ? habits.filter(h => !h.frequency || h.frequency === 'daily') : [];
+    const dailyHabitIds = new Set(dailyHabits.map(h => h.id));
+    const totalDailyHabits = dailyHabits.length;
 
     // Calculate daily completion percentage
     const progressData = labels.map(day => {
         const dateStr = `${currentMonth.year}-${String(currentMonth.month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-        const dayLogs = logs.filter(l => l.date === dateStr && l.status === 1);
-        // Assuming 10 habits total for percentage calculation, or dynamic based on habits count
-        // For now, let's assume 10 habits is 100%
-        return (dayLogs.length / 10) * 100;
+        const dayLogs = logs.filter(l => l.date === dateStr && l.status === 1 && dailyHabitIds.has(l.habit_id));
+
+        return totalDailyHabits > 0 ? (dayLogs.length / totalDailyHabits) * 100 : 0;
     });
 
     const commonOptions = {
