@@ -8,6 +8,20 @@ const PORT = process.env.PORT || 5000;
 app.use(cors());
 app.use(bodyParser.json());
 
+// Get all data for export
+app.get('/api/export', (req, res) => {
+    db.serialize(() => {
+        db.all("SELECT * FROM habits ORDER BY order_index ASC", [], (err, habits) => {
+            if (err) return res.status(500).json({ error: err.message });
+
+            db.all("SELECT * FROM habit_logs", [], (err, logs) => {
+                if (err) return res.status(500).json({ error: err.message });
+                res.json({ habits, logs });
+            });
+        });
+    });
+});
+
 // Get all habits and their logs for a specific month (YYYY-MM)
 app.get('/api/data', (req, res) => {
     const { month } = req.query; // Format: YYYY-MM

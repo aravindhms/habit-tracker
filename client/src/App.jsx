@@ -4,13 +4,17 @@ import Analysis from './components/Analysis';
 import Charts from './components/Charts';
 import Admin from './components/Admin';
 import Summary from './components/Summary';
-import { Settings, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Settings, ChevronLeft, ChevronRight, Download } from 'lucide-react';
+import * as XLSX from 'xlsx';
 import './index.css';
 
 function App() {
   const [habits, setHabits] = useState([]);
   const [logs, setLogs] = useState([]);
-  const [currentMonth, setCurrentMonth] = useState({ year: 2025, month: 11 }); // Nov 2025
+  const [currentMonth, setCurrentMonth] = useState(() => {
+    const now = new Date();
+    return { year: now.getFullYear(), month: now.getMonth() + 1 };
+  });
   const [view, setView] = useState('dashboard'); // 'dashboard' or 'admin'
 
   const fetchData = async () => {
@@ -135,6 +139,51 @@ function App() {
     }
   };
 
+  const handleExport = async () => {
+    try {
+      const res = await fetch('http://localhost:5000/api/export');
+      const data = await res.json();
+
+      const { habits, logs } = data;
+      const wb = XLSX.utils.book_new();
+
+      // Helper to process data
+      const processHabits = (freq) => {
+        const freqHabits = habits.filter(h => (h.frequency || 'daily') === freq);
+        const freqHabitIds = new Set(freqHabits.map(h => h.id));
+
+        // Map logs to readable format
+        const sheetData = logs
+          .filter(l => freqHabitIds.has(l.habit_id))
+          .map(l => {
+            const habit = freqHabits.find(h => h.id === l.habit_id);
+            return {
+              Date: l.date,
+              Habit: habit ? habit.name : 'Unknown',
+              Status: l.status === 1 ? 'Done' : l.status === 2 ? 'Failed' : 'Empty'
+            };
+          })
+          .sort((a, b) => new Date(b.Date) - new Date(a.Date)); // Sort by date desc
+
+        if (sheetData.length === 0) {
+          sheetData.push({ Info: "No logs found for this category" });
+        }
+
+        const ws = XLSX.utils.json_to_sheet(sheetData);
+        XLSX.utils.book_append_sheet(wb, ws, freq.charAt(0).toUpperCase() + freq.slice(1));
+      };
+
+      processHabits('daily');
+      processHabits('weekly');
+      processHabits('monthly');
+
+      XLSX.writeFile(wb, `habit-tracker-data-${new Date().toISOString().split('T')[0]}.xlsx`);
+    } catch (err) {
+      console.error("Failed to export data", err);
+      alert("Failed to export data");
+    }
+  };
+
   // Calculate summary stats
   const dailyHabits = habits.filter(h => !h.frequency || h.frequency === 'daily');
   const totalHabits = dailyHabits.length;
@@ -163,6 +212,9 @@ function App() {
             <h1>{monthNames[currentMonth.month - 1]} {currentMonth.year}</h1>
             <button className="btn-icon" onClick={handleNextMonth}><ChevronRight size={24} /></button>
           </div>
+          <button className="btn-icon" onClick={handleExport} title="Export Data">
+            <Download size={20} />
+          </button>
           <button className="btn-icon" onClick={() => setView('admin')} title="Manage Habits">
             <Settings size={20} />
           </button>
