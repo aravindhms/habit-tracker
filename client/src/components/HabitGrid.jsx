@@ -1,5 +1,5 @@
-import React from 'react';
-import { Check, X, GripVertical } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Check, X, GripVertical, ChevronLeft, ChevronRight } from 'lucide-react';
 import {
     DndContext,
     closestCenter,
@@ -18,7 +18,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 
 // Sortable Row Component
-const SortableHabitRow = ({ habit, days, getStatus, handleToggle }) => {
+const SortableHabitRow = ({ habit, days, getStatus, handleToggle, isMobile }) => {
     const {
         attributes,
         listeners,
@@ -53,8 +53,8 @@ const SortableHabitRow = ({ habit, days, getStatus, handleToggle }) => {
                         className={`habit-cell ${status === 1 ? 'completed' : status === 2 ? 'failed' : ''}`}
                         onClick={() => handleToggle(habit.id, day, status)}
                     >
-                        {status === 1 && <Check size={14} strokeWidth={3} />}
-                        {status === 2 && <X size={14} strokeWidth={3} />}
+                        {status === 1 && <Check size={isMobile ? 16 : 14} strokeWidth={3} />}
+                        {status === 2 && <X size={isMobile ? 16 : 14} strokeWidth={3} />}
                     </div>
                 );
             })}
@@ -64,7 +64,40 @@ const SortableHabitRow = ({ habit, days, getStatus, handleToggle }) => {
 
 const HabitGrid = ({ habits, logs, currentMonth, onToggle, onReorder }) => {
     const daysInMonth = new Date(currentMonth.year, currentMonth.month, 0).getDate();
-    const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
+    const allDays = Array.from({ length: daysInMonth }, (_, i) => i + 1);
+
+    // Mobile detection
+    const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+    const [currentWeek, setCurrentWeek] = useState(0);
+
+    // Calculate weeks for the month
+    const getWeeksInMonth = () => {
+        const weeks = [];
+        for (let i = 0; i < daysInMonth; i += 7) {
+            const weekDays = allDays.slice(i, Math.min(i + 7, daysInMonth));
+            weeks.push(weekDays);
+        }
+        return weeks;
+    };
+
+    const weeksInMonth = getWeeksInMonth();
+    const totalWeeks = weeksInMonth.length;
+
+    // Get days for current view
+    const days = isMobile ? weeksInMonth[currentWeek] || [] : allDays;
+
+    useEffect(() => {
+        const handleResize = () => {
+            setIsMobile(window.innerWidth <= 768);
+        };
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
+    // Reset week when month changes
+    useEffect(() => {
+        setCurrentWeek(0);
+    }, [currentMonth]);
 
     const sensors = useSensors(
         useSensor(PointerSensor),
@@ -90,17 +123,7 @@ const HabitGrid = ({ habits, logs, currentMonth, onToggle, onReorder }) => {
         if (active.id !== over.id) {
             const oldIndex = dailyHabits.findIndex((h) => h.id === active.id);
             const newIndex = dailyHabits.findIndex((h) => h.id === over.id);
-
-            // Create new full list preserving other habits' positions if needed, 
-            // but here we only reorder daily habits relative to each other.
-            // We need to construct the full new list to send back to App.jsx
             const newDaily = arrayMove(dailyHabits, oldIndex, newIndex);
-
-            // Re-merge with non-daily habits (which aren't being reordered here)
-            // Actually, onReorder expects the full list. 
-            // We should append the others at the end or keep their relative positions?
-            // Simplest: Daily first, then others. Or just map the new order.
-
             const newHabits = [...newDaily, ...weeklyHabits, ...monthlyHabits];
             onReorder(newHabits);
         }
@@ -122,14 +145,29 @@ const HabitGrid = ({ habits, logs, currentMonth, onToggle, onReorder }) => {
         onToggle(habitId, dateStr, nextStatus);
     };
 
+    // Week navigation
+    const goToPrevWeek = () => {
+        setCurrentWeek(prev => Math.max(0, prev - 1));
+    };
+
+    const goToNextWeek = () => {
+        setCurrentWeek(prev => Math.min(totalWeeks - 1, prev + 1));
+    };
+
+    // Get week date range for display
+    const getWeekRange = () => {
+        if (!isMobile || !weeksInMonth[currentWeek]) return '';
+        const weekDays = weeksInMonth[currentWeek];
+        const startDay = weekDays[0];
+        const endDay = weekDays[weekDays.length - 1];
+        return `${startDay} - ${endDay}`;
+    };
+
     // --- Weekly Logic ---
-    // Weeks: 1, 2, 3, 4, 5 (simple division)
     const weeks = [1, 2, 3, 4, 5];
 
     const handleWeeklyToggle = (habitId, week, currentStatus) => {
         const dateKey = `${currentMonth.year}-${String(currentMonth.month).padStart(2, '0')}-W${week}`;
-        // No strict future check for weeks/months for now, or maybe check if current date is in that week?
-        // Let's keep it open for flexibility.
         let nextStatus = currentStatus === 0 ? 1 : currentStatus === 1 ? 2 : 0;
         onToggle(habitId, dateKey, nextStatus);
     };
@@ -146,8 +184,32 @@ const HabitGrid = ({ habits, logs, currentMonth, onToggle, onReorder }) => {
 
             {/* DAILY HABITS */}
             {dailyHabits.length > 0 && (
-                <div className="habit-grid-container glass-panel">
-                    <div className="grid-header">
+                <div className={`habit-grid-container glass-panel ${isMobile ? 'mobile-paginated' : ''}`}>
+                    {/* Mobile Week Navigation */}
+                    {isMobile && (
+                        <div className="week-pagination">
+                            <button
+                                className="week-nav-btn"
+                                onClick={goToPrevWeek}
+                                disabled={currentWeek === 0}
+                            >
+                                <ChevronLeft size={20} />
+                            </button>
+                            <div className="week-indicator">
+                                <span className="week-label">Week {currentWeek + 1}</span>
+                                <span className="week-dates">Days {getWeekRange()}</span>
+                            </div>
+                            <button
+                                className="week-nav-btn"
+                                onClick={goToNextWeek}
+                                disabled={currentWeek === totalWeeks - 1}
+                            >
+                                <ChevronRight size={20} />
+                            </button>
+                        </div>
+                    )}
+
+                    <div className={`grid-header ${isMobile ? 'mobile-grid' : ''}`}>
                         <div className="habit-name-header">Daily Habits</div>
                         {days.map(day => (
                             <div key={day} className="day-header">
@@ -170,12 +232,26 @@ const HabitGrid = ({ habits, logs, currentMonth, onToggle, onReorder }) => {
                                     key={habit.id}
                                     habit={habit}
                                     days={days}
+                                    isMobile={isMobile}
                                     getStatus={(id, day) => getStatus(id, `${currentMonth.year}-${String(currentMonth.month).padStart(2, '0')}-${String(day).padStart(2, '0')}`)}
                                     handleToggle={handleDailyToggle}
                                 />
                             ))}
                         </SortableContext>
                     </DndContext>
+
+                    {/* Mobile Week Dots */}
+                    {isMobile && (
+                        <div className="week-dots">
+                            {weeksInMonth.map((_, idx) => (
+                                <button
+                                    key={idx}
+                                    className={`week-dot ${idx === currentWeek ? 'active' : ''}`}
+                                    onClick={() => setCurrentWeek(idx)}
+                                />
+                            ))}
+                        </div>
+                    )}
                 </div>
             )}
 

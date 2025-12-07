@@ -9,6 +9,7 @@ import * as XLSX from 'xlsx';
 import './index.css';
 
 function App() {
+  const API_BASE = `http://${window.location.hostname}:5000`;
   const [habits, setHabits] = useState([]);
   const [logs, setLogs] = useState([]);
   const [currentMonth, setCurrentMonth] = useState(() => {
@@ -21,7 +22,7 @@ function App() {
     try {
       const monthStr = `${currentMonth.year}-${String(currentMonth.month).padStart(2, '0')}`;
       console.log(`Fetching data for: ${monthStr}`);
-      const res = await fetch(`http://localhost:5000/api/data?month=${monthStr}`, {
+      const res = await fetch(`${API_BASE}/api/data?month=${monthStr}`, {
         cache: 'no-store',
         headers: {
           'Pragma': 'no-cache',
@@ -70,7 +71,7 @@ function App() {
     setLogs(newLogs);
 
     try {
-      await fetch('http://localhost:5000/api/toggle', {
+      await fetch(`${API_BASE}/api/toggle`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ habit_id: habitId, date, status })
@@ -83,7 +84,7 @@ function App() {
 
   const handleAddHabit = async (habitData) => {
     try {
-      await fetch('http://localhost:5000/api/habits', {
+      await fetch(`${API_BASE}/api/habits`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(habitData)
@@ -96,7 +97,7 @@ function App() {
 
   const handleUpdateHabit = async (id, habitData) => {
     try {
-      await fetch(`http://localhost:5000/api/habits/${id}`, {
+      await fetch(`${API_BASE}/api/habits/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(habitData)
@@ -109,7 +110,7 @@ function App() {
 
   const handleDeleteHabit = async (id) => {
     try {
-      await fetch(`http://localhost:5000/api/habits/${id}`, {
+      await fetch(`${API_BASE}/api/habits/${id}`, {
         method: 'DELETE'
       });
       fetchData();
@@ -128,7 +129,7 @@ function App() {
         order_index: index
       }));
 
-      await fetch('http://localhost:5000/api/habits/reorder', {
+      await fetch(`${API_BASE}/api/habits/reorder`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ habits: reorderPayload })
@@ -141,7 +142,8 @@ function App() {
 
   const handleExport = async () => {
     try {
-      const res = await fetch('http://localhost:5000/api/export');
+      // const API_URL = ... (removed local definition)
+      const res = await fetch(`${API_BASE}/api/export`);
       const data = await res.json();
 
       const { habits, logs } = data;
@@ -209,7 +211,7 @@ function App() {
           </div>
           <div className="month-nav">
             <button className="btn-icon" onClick={handlePrevMonth}><ChevronLeft size={24} /></button>
-            <h1>{monthNames[currentMonth.month - 1]} {currentMonth.year}</h1>
+            <h4>{monthNames[currentMonth.month - 1]} {currentMonth.year}</h4>
             <button className="btn-icon" onClick={handleNextMonth}><ChevronRight size={24} /></button>
           </div>
           <button className="btn-icon" onClick={handleExport} title="Export Data">
